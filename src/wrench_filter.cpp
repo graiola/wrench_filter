@@ -31,14 +31,30 @@ private:
     std::string topic_name_;
     ros::Publisher publisher_;
 
-
+   
     //  Callback to register with tf::MessageFilter to be called when WrenchStamped are available
-    void msgCallback(const boost::shared_ptr<const geometry_msgs::WrenchStamped>& wrench)
+    void msgCallback(const boost::shared_ptr<const geometry_msgs::WrenchStamped>& wrench_ptr) // FIXME Add the torques!!!
     {
+      
+        geometry_msgs::WrenchStamped wrench_out;
+	geometry_msgs::PointStamped tmp_point_in;
+	geometry_msgs::PointStamped tmp_point_out;
+	
         try
         {
-           
-            publisher_.publish(wrench);
+	    tmp_point_in.header = wrench_ptr->header;
+            tmp_point_in.point.x = wrench_ptr->wrench.force.x;
+	    tmp_point_in.point.y = wrench_ptr->wrench.force.y;
+	    tmp_point_in.point.z = wrench_ptr->wrench.force.z;
+	    
+	    tf_.transformPoint(target_frame_, tmp_point_in, tmp_point_out);
+
+	    wrench_out.header = tmp_point_out.header;
+	    wrench_out.wrench.force.x = tmp_point_out.point.x;
+	    wrench_out.wrench.force.y = tmp_point_out.point.y;
+	    wrench_out.wrench.force.z = tmp_point_out.point.z ;
+	  
+            publisher_.publish(wrench_out);
 
         }
         catch (tf::TransformException &ex)
